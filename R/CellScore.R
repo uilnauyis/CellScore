@@ -8,9 +8,9 @@
 #' is undergoing a transition in cell identity from a starting cell type to a
 #' target cell type.
 #'
-#' @param eset an ExpressionSet containing data matrices of normalized
-#'   expression data, present/absent calls, a gene annotation data frame and a
-#'   phenotype data frame.
+#' @param inputObj an ExpressionSet or a SummarizedExperiment object containing 
+#'   data matrices of normalized expression data, present/absent calls, a gene 
+#'   annotation data frame and a phenotype data frame.
 #' @param cell.change a data frame containing three columns, one for the
 #'   start (donor) test and target cell type. Each row of the data.
 #'   frame describes one transition from the start to a target cell type.
@@ -71,7 +71,7 @@
 #'                           cs$cosine.samples)
 #' }
 
-CellScore <- function(eset, cell.change, scores.onoff, scores.cosine) {
+CellScore <- function(inputObj, cell.change, scores.onoff, scores.cosine) {
     ## PSEUDOCODE
     ## Start with individ.OnOff and add cosine similarities as columns to it.
     ## o transpose the cs$cosine.samples so samples are in rows
@@ -85,10 +85,11 @@ CellScore <- function(eset, cell.change, scores.onoff, scores.cosine) {
     ## PART 00. Check function arguments
     ############################################################################
     fun.main <- as.character(match.call()[[1]])
-    .stopIfNotExpressionSet(eset, "eset", fun.main)
+    .stopIfNotExpressionSetOrSummarizedExperiment(inputObj, 'inputObj', fun.main)
     .stopIfNotDataFrame(cell.change, "cell.change", fun.main)
     .stopIfNotDataFrame(scores.onoff, "scores.onoff", fun.main)
     .stopIfNotSymetricMatrix0to1(scores.cosine, "scores.cosine", fun.main)
+    sExpt <- .tryMakeSummarizedExperimentFromExpressionSet(inputObj)
 
     ############################################################################
     ## PART 0. Filter samples according to the phenotype
@@ -100,7 +101,7 @@ CellScore <- function(eset, cell.change, scores.onoff, scores.cosine) {
     ##  o also exclude any rows with NA values in "general_cell_type":
     ##    this should not be NA
 
-    pdata <- pData(eset)
+    pdata <- colData(sExpt)
     sel <- !is.na(pdata$category) & !is.na(pdata$general_cell_type)
 
     ## DO 'major group' comparisons only
@@ -120,6 +121,7 @@ CellScore <- function(eset, cell.change, scores.onoff, scores.cosine) {
     ##   a. standards
     target.group <- unique(unlist(score.comparisons[, -2]))
     ##    b. ALL samples with valid labels
+    .stopIfDataFrameRowNamesAreNull(pdata)
     test.samples <- rownames(pdata[sel, ])
 
     ##   2. extract the cosine similarity for all GSM samples (rows) wrt

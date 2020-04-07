@@ -5,9 +5,9 @@
 #' Cosine similarity score
 #'
 #' This function calculates the cosine similarity for cell transitions.
-#' @param eset an ExpressionSet containing data matrices of normalized
-#'   expression data, present/absent calls, a gene annotation data frame and a
-#'   phenotype data frame.
+#' @param inputObj an ExpressionSet or a SummarizedExperiment object containing 
+#'   data matrices of normalized expression data, present/absent calls, a gene 
+#'   annotation data frame and a phenotype data frame.
 #' @param cell.change a data frame containing three columns, one for the
 #'   start (donor) test and target cell type. Each row of the data
 #'   frame describes one transition from the start to a target cell type.
@@ -17,13 +17,14 @@
 #'   will be used for the iqr calculation.
 #' @return This function returns a list of five objects, as follows:
 #' \describe{
-#'   \item{pdataSub}{the phenotype data frame describing the standard samples}
+#'   \item{pdataSub}{the phenotype DataFrame object describing the standard 
+#'    samples}
 #'   \item{esetSub.IQR}{the expression value matrix, as filtered by IQR
 #'   threshold}
 #'   \item{cosine.general.groups}{a numeric matrix of cosine similarity
-#'   between the centroids of all groups defined by eset@general_cell_types}
+#'   between the centroids of all groups defined by inputObj@general_cell_types}
 #'   \item{cosine.subgroups}{a numeric matrix of cosine similarity
-#'   between the centroids of all gsubroups defined by eset@sub_cell_types1}
+#'   between the centroids of all gsubroups defined by inputObj@sub_cell_types1}
 #'   \item{cosine.samples}{a numeric matrix of cosine similarity between
 #'    general groups, subgroups and individual samples.}
 #'}
@@ -66,15 +67,16 @@
 #'    cs <- CosineSimScore(eset.sub, cell.change, iqr.cutoff=0.1)
 #' }
 
-CosineSimScore <- function(eset, cell.change, iqr.cutoff=0.1) {
+CosineSimScore <- function(inputObj, cell.change, iqr.cutoff=0.1) {
 
     ###########################################################################
     ## PART 0. Check function arguments
     ###########################################################################
     fun.main <- deparse(match.call()[[1]])
-    .stopIfNotExpressionSet(eset, 'eset', fun.main)
+    .stopIfNotExpressionSetOrSummarizedExperiment(inputObj, 'inputObj', fun.main)
     .stopIfNotDataFrame(cell.change, 'cell.change', fun.main)
     .stopIfNotNumeric0to1(iqr.cutoff, 'min.diff.cutoff', fun.main)
+    sExpt <- .tryMakeSummarizedExperimentFromExpressionSet(inputObj)
 
     ## Preallocate output list
     result <- vector(mode="list", length=5)
@@ -86,13 +88,13 @@ CosineSimScore <- function(eset, cell.change, iqr.cutoff=0.1) {
     ###########################################################################
     ## o phenoData table contains which samples should be used in the analysis
     ##    o the samples which should be used in the analysis will have an
-    ##     assigned category eset@phenoData$category, as "standard" or "test"
+    ##     assigned category sExpt@phenoData$category, as "standard" or "test"
     ##    o non-assigned samples with NA values will be ignored
     ## o NOTE
     ##   assigning NA values to samples is an easy way to eliminate samples
     ##   from the analysis, without having to remove them from all input tables
-    ##   (eg removing from eset, pdata, calls)
-    pdata <- pData(eset)
+    ##   (eg removing from sExpt, pdata, calls)
+    pdata <- colData(sExpt)
     ## filter out samples with missing category and/or general cell type
     pdata.sel <- .filterPheno(pdata, fun.main, "na")
 
@@ -106,7 +108,7 @@ CosineSimScore <- function(eset, cell.change, iqr.cutoff=0.1) {
         stop(paste("No standard reference samples found, exiting function",
              fun.main))
     result$pdataSub <- pdataStd <- pdata.sel[selStd, ]
-    ynormStd <- exprs(eset[, selStd])
+    ynormStd <- assay(sExpt[, selStd], "exprs")
 
     ## B. Filter out not variable probes,
     ##    o variance in terms of IQR of group-wise median expressions
@@ -130,7 +132,7 @@ CosineSimScore <- function(eset, cell.change, iqr.cutoff=0.1) {
 
     ## We keep for score calculation the gene-filtered dataset with standards
     ## and test samples
-    ynormIQR <- exprs(eset[selGenes, rownames(pdata.sel)])
+    ynormIQR <- assay(sExpt[selGenes, rownames(pdata.sel)], "exprs")
 
     ############################################################################
     ## PART III. Calculating metrics

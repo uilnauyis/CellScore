@@ -8,9 +8,9 @@
 #' takes into account the cell type spcefific and most variable portion of the
 #' detected transcriptome. It can be calculated for a sample or group of
 #' samples representing specific (standard or engineered) cell type.
-#' @param eset an ExpressionSet containing data matrices of normalized
-#'   expression data, present/absent calls, a gene annotation data frame and a
-#'   phenotype data frame.
+#' @param inputObj an ExpressionSet or a SummarizedExperiment object containing 
+#'   data matrices of normalized expression data, present/absent calls, a gene 
+#'   annotation data frame and a phenotype data frame.
 #' @param cell.change a data frame containing three columns, one for the start
 #'   (donor) test and target cell type. Each row of the data frame describes one
 #'   transition from the start to a target cell type.
@@ -36,10 +36,11 @@
 #'   %}
 #' @keywords onoff score markers
 #' @export
-#' @seealso \code{\link[hgu133plus2CellScore]{hgu133plus2CellScore}} for details on the
-#'   specific ExpressionSet object that shoud be provided as an input.
-#' @importClassesFrom Biobase ExpressionSet
-#' @importMethodsFrom Biobase fData pData
+#' @seealso \code{\link[hgu133plus2CellScore]{hgu133plus2CellScore}} for details 
+#'   on the specific ExpressionSet or SummarizedExperiment object that shoud be 
+#'   provided as an input.
+#' @importClassesFrom Biobase ExpressionSet SummarizedExperiment
+#' @importMethodsFrom Biobase 
 #' @importFrom Biobase assayDataElement
 #' @importFrom utils setTxtProgressBar txtProgressBar
 #' @examples
@@ -71,19 +72,19 @@
 #'    individ.OnOff <- OnOff(eset, cell.change, out.put="individual")
 #' }
 
-OnOff <- function(eset, cell.change,
+OnOff <- function(inputObj, cell.change,
                   out.put = c("marker.list", "individual"),
                   min.diff.cutoff=0.8,
                   test.cutoff=0.95){
-
     ############################################################################
-    ## PART 0. Check function arguments
+    ## PART 0. Check and convert function arguments
     ############################################################################
     fun.main <- deparse(match.call()[[1]])
-    .stopIfNotExpressionSet(eset, 'eset', fun.main)
+    .stopIfNotExpressionSetOrSummarizedExperiment(inputObj, 'inputObj', fun.main)
     .stopIfNotDataFrame(cell.change, 'cell.change', fun.main)
     .stopIfNotNumeric0to1(min.diff.cutoff, 'min.diff.cutoff', fun.main)
     .stopIfNotNumeric0to1(test.cutoff, 'test.cutoff', fun.main)
+    sExpt <- .tryMakeSummarizedExperimentFromExpressionSet(inputObj)
 
     ############################################################################
     ## PART I. Filter samples according to phenoData
@@ -96,9 +97,9 @@ OnOff <- function(eset, cell.change,
     ##         score.comparisons table, so that ALL of the score
     ##         comparisons in the table have samples in all groups
     ############################################################################
-    annot <- fData(eset)
-    pdata <- .filterPheno(pData(eset), fun.main, 'na')
-    calls <- assayDataElement(eset[, rownames(pdata)], "calls")
+    annot <- rowData(sExpt)
+    pdata <- .filterPheno(colData(sExpt), fun.main, 'na')
+    calls <- assay(sExpt[, rownames(pdata)], "calls")
     rownames(calls) <- annot$probe_id
     score.comparisons <- .filterTransitions(cell.change, pdata, fun.main,
                                             "valid.names")
@@ -228,7 +229,7 @@ OnOff <- function(eset, cell.change,
                      list(markers=markers, scores=scores)
                  })
 
-    ## Combine marker and score lists
+      ## Combine marker and score lists
     onoff.markers <- do.call('rbind', lapply(out, '[[', 'markers'))
     sub.onoff.markers <- onoff.markers[, c("comparison", "group", "probe_id")]
     onoff.markers <- onoff.markers[!duplicated(sub.onoff.markers),]
@@ -307,7 +308,6 @@ OnOff <- function(eset, cell.change,
 }
 
 ## formatOnOffScores
-##
 ##
 ## Local function that formats the on/off scores and its score components
 ## (loss and gain of marakers) into a tabular format

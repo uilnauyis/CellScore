@@ -88,7 +88,7 @@
 ## FUNCTION: .filterPheno
 ################################################################################
 #' Filters samples from phenotype data with missing info
-#' @param pheno a data.frame with phenotype descriptions
+#' @param pheno a DataFrame with phenotype descriptions
 #' @param calling.fun a character - name of the parent function calling this
 #'   function
 #' @param flag a character - type of filter, one of the following: 'na',
@@ -125,7 +125,7 @@
 #' Selects cell transitions that have donor and target samples defined in pheno
 #' or that at have at least 3 samples each
 #' @param cell.change a data.frame with selected transitions
-#' @param pheno a data.frame with phenotype descriptions
+#' @param pheno a DataFrame with phenotype descriptions
 #' @param calling.fun a character - name of the parent function calling this
 #'   function
 #' @param flag a character - type of filter, either 'sample.counts' or
@@ -239,13 +239,28 @@
 }
 
 ################################################################################
+## FUNCTION: .tryMakeSummarizedExperimentFromExpressionSet
+################################################################################
+.tryMakeSummarizedExperimentFromExpressionSet <- function(input){
+    if (is(input, "SummarizedExperiment")) {
+        return(input)
+    }
+    result <- try(makeSummarizedExperimentFromExpressionSet(input))
+    if (!is(result, "SummarizedExperiment")) {
+        stop(paste("Conversion from ExpressionSet to SummarizedExperiment failed"))
+    }
+    result
+}
+
+################################################################################
 ## FUNCTION: .stopIfNotExpressionSet
 ################################################################################
 #' @importFrom methods is
-.stopIfNotExpressionSet <- function(x, x.name, fun.name){
-    if (!is(x,"ExpressionSet")) {
+.stopIfNotExpressionSetOrSummarizedExperiment <- function(x, x.name, fun.name){
+    if (!is(x,"ExpressionSet") && !is(x,"SummarizedExperiment")) {
         stop(paste("In the function", fun.name, "the", x.name,
-                   "argument shoud be an ExpressionSet."))
+                   "argument shoud be an ExpressionSet 
+                    or an SummarizedExperiment."))
     }
 }
 
@@ -290,5 +305,28 @@
     if (!all(x == matrix(as.numeric(as.logical(x)), nrow=nrow(x)))){
         stop(paste("In function", fun.name, "the", x.name,
                    "argument shoud be a binary numeric matrix."))
+    }
+}
+
+################################################################################
+## FUNCTION: .stopIfNotIdentical
+################################################################################
+.stopIfNotIdentical <- function(obj1, obj2, obj1.name, obj2.name, stopIfFail){
+    if (!identical(obj1, obj2)){
+        errorMsg <- paste("Error: ", obj1.name, "and", obj2.name, 
+          "should be identical")
+        if (stopIfFail) {
+          stop(errorMsg)
+        }
+        print(errorMsg)
+    }
+}
+
+################################################################################
+## FUNCTION: .stopIfsExptRowNamesAreNull
+################################################################################
+.stopIfDataFrameRowNamesAreNull <- function(dFrame){
+    if (is.null(rownames(dFrame))){
+      stop("Error: row names of \"sExpt\" object should not be NULL" )
     }
 }

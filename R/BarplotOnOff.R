@@ -26,7 +26,9 @@
 #'   on the specific expressionSet object that should be provided as an input.
 #' @export
 #' @importClassesFrom Biobase ExpressionSet
+#' @importClassesFrom SummarizedExperiment SummarizedExperiment
 #' @importMethodsFrom Biobase pData
+#' @importMethodsFrom SummarizedExperiment colData
 #' @importFrom graphics par barplot plot mtext legend
 #' @examples
 #' ## Load the expression set for the standard cell types

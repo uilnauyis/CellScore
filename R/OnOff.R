@@ -39,10 +39,12 @@
 #' @seealso \code{\link[hgu133plus2CellScore]{hgu133plus2CellScore}} for details 
 #'   on the specific ExpressionSet or SummarizedExperiment object that shoud be 
 #'   provided as an input.
-#' @importClassesFrom Biobase ExpressionSet SummarizedExperiment
-#' @importMethodsFrom Biobase 
+#' @importClassesFrom Biobase ExpressionSet
+#' @importClassesFrom SummarizedExperiment SummarizedExperiment
+#' @importFrom SummarizedExperiment SummarizedExperiment
 #' @importFrom Biobase assayDataElement
 #' @importFrom utils setTxtProgressBar txtProgressBar
+#' @importMethodsFrom SummarizedExperiment colData rowData assay
 #' @examples
 #' ## Load the expression set for the standard cell types
 #' library(Biobase)

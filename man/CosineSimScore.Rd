@@ -4,12 +4,12 @@
 \alias{CosineSimScore}
 \title{Cosine similarity score}
 \usage{
-CosineSimScore(eset, cell.change, iqr.cutoff = 0.1)
+CosineSimScore(inputObj, cell.change, iqr.cutoff = 0.1)
 }
 \arguments{
-\item{eset}{an ExpressionSet containing data matrices of normalized
-expression data, present/absent calls, a gene annotation data frame and a
-phenotype data frame.}
+\item{inputObj}{an ExpressionSet or a SummarizedExperiment object containing 
+data matrices of normalized expression data, present/absent calls, a gene 
+annotation data frame and a phenotype data frame.}
 
 \item{cell.change}{a data frame containing three columns, one for the
 start (donor) test and target cell type. Each row of the data
@@ -23,13 +23,14 @@ will be used for the iqr calculation.}
 \value{
 This function returns a list of five objects, as follows:
 \describe{
-  \item{pdataSub}{the phenotype data frame describing the standard samples}
+  \item{pdataSub}{the phenotype DataFrame object describing the standard 
+   samples}
   \item{esetSub.IQR}{the expression value matrix, as filtered by IQR
   threshold}
   \item{cosine.general.groups}{a numeric matrix of cosine similarity
-  between the centroids of all groups defined by eset@general_cell_types}
+  between the centroids of all groups defined by inputObj@general_cell_types}
   \item{cosine.subgroups}{a numeric matrix of cosine similarity
-  between the centroids of all gsubroups defined by eset@sub_cell_types1}
+  between the centroids of all gsubroups defined by inputObj@sub_cell_types1}
   \item{cosine.samples}{a numeric matrix of cosine similarity between
    general groups, subgroups and individual samples.}
 }
@@ -53,7 +54,7 @@ if (file.exists(rdata.path) && file.exists(tsvdata.path)) {
    load(rdata.path)
 
    ## Import the cell change info for the loaded test samples
-   cell.change <- read.delim(file= tsvdata.path, sep="\\t",
+   cell.change <- read.delim(file= tsvdata.path, sep="\t",
                              header=TRUE, stringsAsFactors=FALSE)
 
    ## Combine the standards and the test data

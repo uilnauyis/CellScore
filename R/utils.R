@@ -241,6 +241,10 @@
 ################################################################################
 ## FUNCTION: .tryMakeSummarizedExperimentFromExpressionSet
 ################################################################################
+#' .tryMakeSummarizedExperimentFromExpressionSet
+#'
+#' @importClassesFrom SummarizedExperiment SummarizedExperiment
+#' @importFrom SummarizedExperiment makeSummarizedExperimentFromExpressionSet
 .tryMakeSummarizedExperimentFromExpressionSet <- function(input){
     if (is(input, "SummarizedExperiment")) {
         return(input)
@@ -255,7 +259,9 @@
 ################################################################################
 ## FUNCTION: .stopIfNotExpressionSet
 ################################################################################
-#' @importFrom methods is
+#' .stopIfNotExpressionSetOrSummarizedExperiment
+#'
+#' @importClassesFrom SummarizedExperiment SummarizedExperiment
 .stopIfNotExpressionSetOrSummarizedExperiment <- function(x, x.name, fun.name){
     if (!is(x,"ExpressionSet") && !is(x,"SummarizedExperiment")) {
         stop(paste("In the function", fun.name, "the", x.name,

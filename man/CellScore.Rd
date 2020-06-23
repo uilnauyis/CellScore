@@ -4,12 +4,12 @@
 \alias{CellScore}
 \title{CellScore evaluates the identity of cells undergoing cell type transition}
 \usage{
-CellScore(eset, cell.change, scores.onoff, scores.cosine)
+CellScore(inputObj, cell.change, scores.onoff, scores.cosine)
 }
 \arguments{
-\item{eset}{an ExpressionSet containing data matrices of normalized
-expression data, present/absent calls, a gene annotation data frame and a
-phenotype data frame.}
+\item{inputObj}{an ExpressionSet or a SummarizedExperiment object containing 
+data matrices of normalized expression data, present/absent calls, a gene 
+annotation data frame and a phenotype data frame.}
 
 \item{cell.change}{a data frame containing three columns, one for the
 start (donor) test and target cell type. Each row of the data.
@@ -51,7 +51,7 @@ if (file.exists(rdata.path) && file.exists(tsvdata.path)) {
    load(rdata.path)
 
    ## Import the cell change info for the loaded test samples
-   cell.change <- read.delim(file= tsvdata.path, sep="\\t",
+   cell.change <- read.delim(file= tsvdata.path, sep="\t",
                              header=TRUE, stringsAsFactors=FALSE)
 
    ## Combine the standards and the test data

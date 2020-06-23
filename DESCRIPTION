@@ -15,15 +15,15 @@ Description: The CellScore package contains functions to evaluate the cell
 Suggests: hgu133plus2CellScore, knitr
 VignetteBuilder: knitr
 biocViews: GeneExpression, Transcription, Microarray,
-        MultipleComparison, ReportWriting, DataImport, Visualization
+        MultipleComparison, ReportWriting, DataImport, Visualization, RNASeq
 Imports: Biobase (>= 2.39.1), graphics (>= 3.5.0), grDevices (>=
         3.5.0), gplots (>= 3.0.1), lsa (>= 0.73.1), methods (>= 3.5.0),
         RColorBrewer(>= 1.1-2), squash (>= 1.0.8), stats (>= 3.5.0),
         utils(>= 3.5.0), SummarizedExperiment (>= 1.16.1)
-Depends: R (>= 3.5.0)
+Depends: R (>= 4.0.0)
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.0.1
+RoxygenNote: 7.1.0.9000
 NeedsCompilation: no
 Packaged: 2018-01-18 16:30:20 UTC; nmah

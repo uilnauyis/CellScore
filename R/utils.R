@@ -244,16 +244,31 @@
 #' .tryMakeSummarizedExperimentFromExpressionSet
 #'
 #' @importClassesFrom SummarizedExperiment SummarizedExperiment
-#' @importFrom SummarizedExperiment makeSummarizedExperimentFromExpressionSet
+#' @importMethodsFrom SummarizedExperiment SummarizedExperiment
+#' @importMethodsFrom Biobase fData pData
 .tryMakeSummarizedExperimentFromExpressionSet <- function(input){
     if (is(input, "SummarizedExperiment")) {
-        return(input)
+      # Set feature_id for of 'rowData' of the input
+      rowdata <- rowData(input)
+      rowdata$feature_id <- rownames(rowdata)
+      rowData(input) <- rowdata
+      return(input)
     }
-    result <- try(makeSummarizedExperimentFromExpressionSet(input))
-    if (!is(result, "SummarizedExperiment")) {
-        stop(paste("Conversion from ExpressionSet to SummarizedExperiment failed"))
-    }
-    result
+
+    # Construct SummarizedExperiment Object based on the ExpressionSet input
+    # object
+    rowdata <- fData(input)
+    rownames(rowdata) <- rowdata$probe_id
+    # set feature ids the same as probe ids
+    rowdata$feature_id <- rowdata$probe_id
+    coldata <- pData(input)
+    calls <- assayDataElement(input, "calls")
+    rownames(calls) <- rowdata$probe_id
+    exprs <- assayDataElement(input, "exprs")
+    rownames(exprs) <- rowdata$probe_id
+    SummarizedExperiment(assays = list(calls = calls, exprs = exprs),
+                         colData = coldata,
+                         rowData = rowdata)
 }
 
 ################################################################################
@@ -265,7 +280,7 @@
 .stopIfNotExpressionSetOrSummarizedExperiment <- function(x, x.name, fun.name){
     if (!is(x,"ExpressionSet") && !is(x,"SummarizedExperiment")) {
         stop(paste("In the function", fun.name, "the", x.name,
-                   "argument shoud be an ExpressionSet 
+                   "argument shoud be an ExpressionSet
                     or an SummarizedExperiment."))
     }
 }
@@ -319,7 +334,7 @@
 ################################################################################
 .stopIfNotIdentical <- function(obj1, obj2, obj1.name, obj2.name, stopIfFail){
     if (!identical(obj1, obj2)){
-        errorMsg <- paste("Error: ", obj1.name, "and", obj2.name, 
+        errorMsg <- paste("Error: ", obj1.name, "and", obj2.name,
           "should be identical")
         if (stopIfFail) {
           stop(errorMsg)

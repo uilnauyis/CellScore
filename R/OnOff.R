@@ -8,8 +8,8 @@
 #' takes into account the cell type spcefific and most variable portion of the
 #' detected transcriptome. It can be calculated for a sample or group of
 #' samples representing specific (standard or engineered) cell type.
-#' @param inputObj an ExpressionSet or a SummarizedExperiment object containing 
-#'   data matrices of normalized expression data, present/absent calls, a gene 
+#' @param inputObj an ExpressionSet or a SummarizedExperiment object containing
+#'   data matrices of normalized expression data, present/absent calls, a gene
 #'   annotation data frame and a phenotype data frame.
 #' @param cell.change a data frame containing three columns, one for the start
 #'   (donor) test and target cell type. Each row of the data frame describes one
@@ -36,8 +36,8 @@
 #'   %}
 #' @keywords onoff score markers
 #' @export
-#' @seealso \code{\link[hgu133plus2CellScore]{hgu133plus2CellScore}} for details 
-#'   on the specific ExpressionSet or SummarizedExperiment object that shoud be 
+#' @seealso \code{\link[hgu133plus2CellScore]{hgu133plus2CellScore}} for details
+#'   on the specific ExpressionSet or SummarizedExperiment object that shoud be
 #'   provided as an input.
 #' @importClassesFrom Biobase ExpressionSet
 #' @importClassesFrom SummarizedExperiment SummarizedExperiment
@@ -102,7 +102,6 @@ OnOff <- function(inputObj, cell.change,
     annot <- rowData(sExpt)
     pdata <- .filterPheno(colData(sExpt), fun.main, 'na')
     calls <- assay(sExpt[, rownames(pdata)], "calls")
-    rownames(calls) <- annot$probe_id
     score.comparisons <- .filterTransitions(cell.change, pdata, fun.main,
                                             "valid.names")
 
@@ -233,7 +232,7 @@ OnOff <- function(inputObj, cell.change,
 
       ## Combine marker and score lists
     onoff.markers <- do.call('rbind', lapply(out, '[[', 'markers'))
-    sub.onoff.markers <- onoff.markers[, c("comparison", "group", "probe_id")]
+    sub.onoff.markers <- onoff.markers[, c("comparison", "group","feature_id")]
     onoff.markers <- onoff.markers[!duplicated(sub.onoff.markers),]
     onoff.scores <- do.call('rbind', lapply(out, '[[', 'scores'))
 
@@ -297,7 +296,7 @@ OnOff <- function(inputObj, cell.change,
     markers <- lapply(c("start", "target"),
                       function(group){
                           stopifnot(identical(names(probesets[[group]]),
-                                              annotations$probe_id))
+                                              rownames(annotations)))
                           info <- paste(instance[c("start", "target")],
                                         collapse = "->")
                           count.group <- sum(probesets[[group]])

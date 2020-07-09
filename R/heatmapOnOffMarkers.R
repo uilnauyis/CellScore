@@ -51,7 +51,7 @@
 #'    ## NOTE: May take 1-2 minutes on the full eset object
 #'    ## so we subset it for 4 cell types
 #'    pdata <- pData(eset)
-#'    sel.samples <- pdata$general_cell_type %in% c("ESC", "EC", "FIB", "KER", 
+#'    sel.samples <- pdata$general_cell_type %in% c("ESC", "EC", "FIB", "KER",
 #'                  "ASC", "NPC", "MSC", "iPS", "piPS")
 #'    eset.sub <- eset[, sel.samples]
 #'    cs <- CosineSimScore(eset.sub, cell.change, iqr.cutoff=0.1)
@@ -137,7 +137,7 @@ heatmapOnOffMarkers <- function(test.data, markergenes, pdata, calls) {
 
     calls.list <- lapply(marker.list,
                          function(mat){
-                             sel <- rownames(calls) %in% mat$probe_id
+                             sel <- rownames(calls) %in% mat$feature_id
                              calls[sel, samples.vector]
                          })
 

@@ -13,8 +13,8 @@ OnOff(
 )
 }
 \arguments{
-\item{inputObj}{an ExpressionSet or a SummarizedExperiment object containing 
-data matrices of normalized expression data, present/absent calls, a gene 
+\item{inputObj}{an ExpressionSet or a SummarizedExperiment object containing
+data matrices of normalized expression data, present/absent calls, a gene
 annotation data frame and a phenotype data frame.}
 
 \item{cell.change}{a data frame containing three columns, one for the start
@@ -82,8 +82,8 @@ if (file.exists(rdata.path) && file.exists(tsvdata.path)) {
 }
 }
 \seealso{
-\code{\link[hgu133plus2CellScore]{hgu133plus2CellScore}} for details 
-  on the specific ExpressionSet or SummarizedExperiment object that shoud be 
+\code{\link[hgu133plus2CellScore]{hgu133plus2CellScore}} for details
+  on the specific ExpressionSet or SummarizedExperiment object that shoud be
   provided as an input.
 }
 \keyword{markers}

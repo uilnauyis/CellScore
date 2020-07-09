@@ -131,6 +131,9 @@ rugplotDonorTargetTest <- function(test.data, cellscore) {
 ## by groups defined in celltype.
 
 .doDensityPlot <- function(data.list, celltype){
+    if(length(data.list$test) < 2) {
+        return(NULL)
+    }
     dens.list <- lapply(data.list, density)
     plot(dens.list$target, type="n",
          main=paste0("CellScores: ","Transition from ",

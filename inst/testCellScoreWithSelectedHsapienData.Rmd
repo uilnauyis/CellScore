@@ -1,20 +1,20 @@
 ---
-title: "testCellScoreWithSelectedHsapienData"
+title: "test CellScore With SelectedHsapienData normalized with Deseq2 normalization"
 author: "Siyuan"
 date: "6/29/2020"
 output: html_document
 ---
 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+### Data preprocessing
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
+#### creating a map between cell types and their abbreviations
+Function 'getCellTypeMap' in this example returns a map between cell types and their abbreviations.
+This map is not part of the CellScore library and should be defined by the user. Each abbreviation should 
+be unique and has a 1-to-1 mapping to a cell type.
 ```{r}
 getCellTypeMap <- function() {
     ## Hardcode abbreviations for each cell type
@@ -116,10 +116,22 @@ getCellTypeMap <- function() {
         "LPC")
 
     cellTypeMap <- setNames(abbrv, cellTypes)
+    
+    # Mapping from full cell type names to their abbrvs
     print(cellTypeMap)
     cellTypeMap
 }
 ```
+#### Prepare 'cell.change' data frame
+ The following code prepares 'cell.change' data frame. This data frame contains 3 columns, 
+ which are 'start', 'test' and 'target'. Each row in the data frame represents the transition 
+ in an experiment. The values in the 'start' column are the abbreviations of
+ parental cell types (or starting cell types) in the transitions. The values in 'target' column are the abbreviations of
+ the target cell types in the transitions. The values in 'test' column are in the format '{test_cell_type}-{start}', where
+ '{test_cell_type}' are the abbreviations of the name assigned to the test cells and '{start}' are the abbreviations of
+ parental cell types (or starting cell types). The following function 'prepareSampleTransitions' is used to generate and save the 'cell.change' in a
+ tsv file and is not part of 'CellScore' library. The user should create this data frame based on the experiment data.
+ 
 
 ```{r}
 prepareSampleTransitions <- function() {
@@ -132,7 +144,8 @@ prepareSampleTransitions <- function() {
     uniqueCellTypes <- unique(c(as.array(dat$general_cell_type),
                                 as.array(dat$target_cell_type),
                                 as.array(dat$parental_cell_type)))
-
+    
+    # Show all the unique cell types in the data
     print(uniqueCellTypes)
 
     cellTypeMap <- getCellTypeMap()
@@ -156,15 +169,18 @@ prepareSampleTransitions <- function() {
                                                       (cellTypeMap[element])
                                                    }))
 
+    
+    ## Format 'test' column
+    uniqueTransitionsAbbrv$test <- paste(uniqueTransitionsAbbrv$test,
+                                         uniqueTransitionsAbbrv$start,
+                                         sep = '-')
 
     tempDirPath <- paste(getwd(), 'temp', sep = '/')
     dir.create(tempDirPath)
 
     write.table(uniqueTransitionsAbbrv,
-                file = paste(getwd(),
-                             'temp',
-                             'exampleTransitionsHsapienData.tsv',
-                             sep = '/'),
+                file = system.file("extdata", "exampleTransitionsHsapienData.tsv",
+                                   package="CellScore"),
                 quote = FALSE,
                 sep = '\t')
 
@@ -172,26 +188,34 @@ prepareSampleTransitions <- function() {
 }
 ```
 
+### Calculate 'CellScore'
+#### Generate 'OnOff' score by run 'OnOff' function with 'cell.change' data frame and experiment data.
+ 'CellScore' library analyze the 'CellScore' of test cells with given standard cells in the experiment data. The 'category' of test cells and standard cells
+ are 'test' and 'standard' respectively. Transitions with insufficient standard cell types (at least 3 for both 'start' and 'target') would be ignored by 'CellScore' library.
 ```{r}
 library(SummarizedExperiment)
+library(CellScore)
+library(DEE2HsapienData)
 
 prepareSampleTransitions()
 CellTypeMap <- getCellTypeMap()
 
-rdata.path <- system.file("extdata", "dee2DataDeseq2Normalized",
+rdata.path <- system.file("extdata", "deseq2NormalizedDee2Data",
   package="CellScore")
 tsvdata.path <- system.file("extdata", "exampleTransitionsHsapienData.tsv",
   package="CellScore")
 
  
 if (file.exists(rdata.path) && file.exists(tsvdata.path)) {
-  dee2DataDeseq2Normalized <- readRDS(rdata.path)
-  normalizedSExpr <- dee2DataDeseq2Normalized$normalizedSExpr
+  deseq2NormalizedDee2Data <- readRDS(rdata.path)
+  normalizedSExpr <- deseq2NormalizedDee2Data$normalizedSExpr
   
+  # replace values in 'general_cell_type' with abbrvs 
   colData(normalizedSExpr)[, 'general_cell_type'] <- unname(as.array(sapply(
     normalizedSExpr$general_cell_type, 
     function(element) CellTypeMap[[element]], USE.NAMES = FALSE)))
   
+  # replace values in 'parental_cell_type' with abbrvs
   colData(normalizedSExpr)[, 'parental_cell_type'] <- unname(as.array(sapply(
     normalizedSExpr$parental_cell_type, 
     function(element) {
@@ -201,18 +225,21 @@ if (file.exists(rdata.path) && file.exists(tsvdata.path)) {
       CellTypeMap[[element]]
     }, USE.NAMES = FALSE)))
   
+  # set values of 'sub_cell_type1' column
   colData(normalizedSExpr)$sub_cell_type1 <- paste(
     colData(normalizedSExpr)$general_cell_type, 
     colData(normalizedSExpr)$parental_cell_type,
     sep = '-')
 
-    
+  pcaPlot(normalizedSExpr)
+  
   
   cell.change <- read.delim(
     file=tsvdata.path, 
     sep="\t",
     header=TRUE, 
     stringsAsFactors=FALSE)
+  
   print("Content of cell.change")
   print(cell.change)
   
@@ -221,9 +248,43 @@ if (file.exists(rdata.path) && file.exists(tsvdata.path)) {
 }
 
 ```
+
+Calculate 'OnOff' scores
 ```{r}
 group.OnOff <- OnOff(normalizedSExpr, cell.change, out.put="marker.list")
-print(group.OnOff)
 print(summary(group.OnOff))
 ```
 
+```{r}
+individ.OnOff <- OnOff(normalizedSExpr, cell.change, out.put="individual")
+```
+
+```{r}
+barplot.out <- BarplotOnOff(normalizedSExpr, group.OnOff$scores)
+barplot.out
+```
+
+```{r}
+tmp.time <- system.time(cs <- CosineSimScore(normalizedSExpr, cell.change,
+                                             iqr.cutoff=0.1))
+PlotCosineSimHeatmap(cs$cosine.general.groups, "general groups",
+                     width=20, height=20, x=-20, y=3)
+
+```
+
+```{r}
+cellscore <- CellScore(normalizedSExpr, cell.change, individ.OnOff$scores,
+                       cs$cosine.samples)
+
+```
+
+```{r}
+ScatterplotCellScoreComponents(cellscore, cell.change, FALSE)
+
+```
+
+```{r}
+pdf(file="CellScoreReport_PerTransition.pdf", width=7, height=11)
+CellScoreReport(cellscore, cell.change, group.OnOff$markers, normalizedSExpr)
+
+```

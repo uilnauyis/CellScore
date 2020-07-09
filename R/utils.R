@@ -243,8 +243,6 @@
 ################################################################################
 #' .tryMakeSummarizedExperimentFromExpressionSet
 #'
-#' @importClassesFrom SummarizedExperiment SummarizedExperiment
-#' @importMethodsFrom SummarizedExperiment SummarizedExperiment
 #' @importMethodsFrom Biobase fData pData
 .tryMakeSummarizedExperimentFromExpressionSet <- function(input){
     if (is(input, "SummarizedExperiment")) {
@@ -252,6 +250,23 @@
       rowdata <- rowData(input)
       rowdata$feature_id <- rownames(rowdata)
       rowData(input) <- rowdata
+      # Set assay 'exprs' same as 'counts'
+      assays(input)$exprs <- assay(input, "counts")
+      # Set 'donor_tissue' as 'parental_cell_type'
+      colData(input)$donor_tissue <- colData(input)$parental_cell_type
+
+      # Set the values of 'experiment_id' as values in 'SRX_accession' column of
+      # the coldata of the input object
+      colData(input)$experiment_id <- colData(input)$SRX_accession
+
+      # Set the values in 'platform_id' as values in 'Platform' column of the
+      # coldata of the input object.
+      colData(input)$platform_id <- colData(input)$Platform
+
+      # Set the values in 'sample_id' as SRR accessions, which are the rownames
+      # of the coldata of the input object.
+      colData(input)$sample_id <- rownames(colData(input))
+
       return(input)
     }
 
@@ -276,7 +291,6 @@
 ################################################################################
 #' .stopIfNotExpressionSetOrSummarizedExperiment
 #'
-#' @importClassesFrom SummarizedExperiment SummarizedExperiment
 .stopIfNotExpressionSetOrSummarizedExperiment <- function(x, x.name, fun.name){
     if (!is(x,"ExpressionSet") && !is(x,"SummarizedExperiment")) {
         stop(paste("In the function", fun.name, "the", x.name,
@@ -289,7 +303,7 @@
 ## FUNCTION: .stopIfNotDataFrame
 ################################################################################
 .stopIfNotDataFrame <- function(x, x.name, fun.name){
-    if (!is.data.frame(x)) {
+    if (!is.data.frame(x) && !class(x) == 'DFrame') {
         stop(paste("In the function", fun.name, "the", x.name,
                    "argument shoud be a data.frame."))
     }

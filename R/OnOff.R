@@ -40,7 +40,6 @@
 #'   on the specific ExpressionSet or SummarizedExperiment object that shoud be
 #'   provided as an input.
 #' @importClassesFrom Biobase ExpressionSet
-#' @importClassesFrom SummarizedExperiment SummarizedExperiment
 #' @importFrom SummarizedExperiment SummarizedExperiment
 #' @importFrom Biobase assayDataElement
 #' @importFrom utils setTxtProgressBar txtProgressBar
@@ -256,7 +255,7 @@ OnOff <- function(inputObj, cell.change,
                                                      "anygroup", "group"),
                                          flag.value=instance[group])
 
-               calls[, rownames(pdata.sel)]
+               calls[, rownames(pdata.sel), drop = FALSE]
            })
 }
 

@@ -33,7 +33,6 @@
 #'   specific ExpressionSet object that shoud be provided as an input.
 #' @export
 #' @importClassesFrom Biobase ExpressionSet
-#' @importClassesFrom SummarizedExperiment SummarizedExperiment
 #' @importMethodsFrom Biobase exprs pData
 #' @importMethodsFrom SummarizedExperiment colData assay
 #' @importFrom lsa cosine

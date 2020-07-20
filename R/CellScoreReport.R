@@ -76,7 +76,8 @@
 #'    dev.off()
 #' }
 
-CellScoreReport <- function(cellscore, cell.change, marker.genes, inputObj) {
+CellScoreReport <- function(cellscore, cell.change, marker.genes, inputObj,
+                            group.by = c('transition', 'experiment_id', 'sub_cell_type1')) {
 
     ############################################################################
     ## PART 0. Check function arguments
@@ -95,9 +96,17 @@ CellScoreReport <- function(cellscore, cell.change, marker.genes, inputObj) {
     ## table
     plot.data <- extractTransitions(cellscore, cell.change)
     ## Define a plot group variable
-    plot.data$plot_group <- paste(plot.data$experiment_id,
-                                  plot.data$cxkey.subcelltype, sep="_")
+    ############################################################################
+    ## PART II. Calculate on/off scores
+    ############################################################################
 
+
+    if (group.by == 'sub_cell_type1') {
+        plot.data$plot_group <- paste(plot.data$experiment_id,
+                                      plot.data$cxkey.subcelltype, sep = "_")
+    } else {
+        plot.data$plot_group <- plot.data$experiment_id
+    }
     ## Sort the scores 1) by target 2) by donor 3) by study
     plot.data.ordered <- plot.data[order(plot.data$target,
                                          plot.data$donor_tissue,
@@ -119,12 +128,14 @@ CellScoreReport <- function(cellscore, cell.change, marker.genes, inputObj) {
                ## Get the scores for the given plot group
                test.data <-
                    plot.data.ordered[plot.data.ordered$plot_group %in% group, ]
-               ## Page layout for plots
+               ## Page 1 layout for plots
                layout(matrix(c(1,2,3,3,4,4), nrow=3, ncol=2, byrow=TRUE))
                ## Plots
-               scatterplotDonorTargetTest(test.data, cellscore, FALSE)
+               scatterplotDonorTargetTest(test.data, cellscore)
                rugplotDonorTargetTest(test.data, cellscore)
+
                heatmapOnOffMarkers(test.data, marker.genes, pdata, calls)
+
     })
 
     ## RinputObj graphical parameters

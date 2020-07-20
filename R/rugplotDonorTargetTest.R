@@ -96,11 +96,12 @@ rugplotDonorTargetTest <- function(test.data, cellscore) {
     ## Get the standard data for this transition and calculate Z-scores
     celltype <- list(donor=test.data$start[1],
                      target=test.data$target[1],
-                     test=test.data$sub_cell_type1[1])
+                     test=unique(test.data$sub_cell_type1))
     data.list <- zscore.list <- list(target=NULL, donor=NULL, test=NULL)
     for (group in names(data.list)) {
         if (group == "test"){
             data.list[[group]] <- test.data$CellScore
+            names(data.list[[group]]) <- test.data$sub_cell_type1
         }else{
             sel.trans <- cellscore$start == celltype$donor &
                 cellscore$target == celltype$target
@@ -131,36 +132,58 @@ rugplotDonorTargetTest <- function(test.data, cellscore) {
 ## by groups defined in celltype.
 
 .doDensityPlot <- function(data.list, celltype){
-    if(length(data.list$test) < 2) {
-        return(NULL)
-    }
-    dens.list <- lapply(data.list, density)
+    celltype.all <- unlist(celltype)
+    dens.list <- lapply(names(celltype.all), function(type) {
+        # Preallocate data object
+        data <- NULL
+        if (type == 'donor' || type == 'target') {
+            data <- data.list[[type]]
+        } else {
+            testData <- data.list$test
+            sel <- names(testData) == celltype.all[type]
+            data <- testData[sel]
+        }
+        # Set density to NULL if number of sample of a cell type is
+        # less than 2
+        if (length(data) < 2) {
+            return(NULL)
+        }
+        density(data)
+    })
+    names(dens.list) <- names(celltype.all)
     plot(dens.list$target, type="n",
          main=paste0("CellScores: ","Transition from ",
                      celltype$donor," -> ", celltype$target),
-         ylim=c(0, max(dens.list$target$y)),
+         ylim=c(0, max(unlist(lapply(dens.list, function(density.val) {
+                           density.val$y
+                       })))),
          xlim=c(min(dens.list$donor$x), max(dens.list$target$x)))
 
     ## Set colours and add coloured points
     col.list <- .getMainColours("all", FALSE)
+     ## Colour mapping
+    testCol.table <- .colourMapping(celltype$test)
     lapply(names(dens.list),
            function(group){
-               ## Plot density if there is more than one value
-               if (length(data.list[[group]]) > 1) {
-                   points(dens.list[[group]], col=col.list[[group]], type="l")
+               if (is.null(dens.list[group])) {
+                   return()
+               }
+               if (group == 'donor' || group == 'target') {
+                    points(dens.list[[group]], col=col.list[[group]], type="l")
+               } else {
+                    colIndex <- testCol.table$group == celltype.all[group]
+                    points(dens.list[[group]],
+                           col=testCol.table$col[colIndex],
+                           type="l")
                }
            })
 
     ## Add rug of test scores
-    rug(data.list$test, col=col.list$test)
-
-    ## Add legend
-    leg.vector <- sapply(names(col.list),
-                         function(x){
-                             paste0(celltype[[x]], " (",
-                                    length(data.list[[x]]),")")
-                         })
-    legend("top", fill=unlist(col.list), legend=leg.vector)
+    for (type in celltype$test){
+        sel <- names(data.list$test) == type
+        colIndex <- testCol.table$group == type
+        rug(data.list$test[sel], col = testCol.table$col[colIndex])
+    }
 }
 
 ## dorugPlot
@@ -173,7 +196,7 @@ rugplotDonorTargetTest <- function(test.data, cellscore) {
 
     xlim <- c(min(unlist(data.list[c("target","test")])),
               max(unlist(data.list[c("target","test")])))
-    ylim <- c(0, 3.5)
+    ylim <- c(0, 5)
     par(mar=c(5, 5, 4, 5) + 0.1)
 
     ## Set up plot area
@@ -188,8 +211,10 @@ rugplotDonorTargetTest <- function(test.data, cellscore) {
          yaxp=c(1, rep(length(data.list), 2)),
          xlab="CellScore"
     )
+
     axis(side=1, labels=TRUE)
-    axis(side=2, at=c(1:2), labels=c(celltype$test, "Standards"), las=2,
+    axis(side=2, at=c(1:(length(celltype$test) + 1)),
+         labels=c(celltype$test, "Standards"), las=2,
          cex.axis=0.9)
 
     ## Set the plot region to grey
@@ -199,19 +224,33 @@ rugplotDonorTargetTest <- function(test.data, cellscore) {
     ## Standards in one line, use density colouring
     ## Set colours and add coloured points
     colramp.list <- .getMainColours("all", TRUE)
-    lapply(names(data.list),
+    testCol.table <- .colourMapping(celltype$test)
+    celltype.all <- unlist(celltype)
+    lapply(names(celltype.all),
            function(group){
                col.group <- colramp.list[[group]]
                y.value <- 1
-               if (group != "test"){
+               if (group == "donor" || group == "target"){
                    col.group <- densCols(data.list[[group]], colramp=col.group)
-                   y.value <- 2
+                   y.value <- length(celltype$test) + 1
+                   points(data.list[[group]],
+                          rep(y.value, length(data.list[[group]])),
+                          col=col.group,
+                          pch="|",
+                          cex=1.8)
+               } else {
+                   celltype.name <- celltype.all[group]
+                   pointsSel <- names(data.list$test) == celltype.name
+                   colIndex <- testCol.table$group == celltype.name
+                   col.group <- testCol.table$col[colIndex]
+                   y.value <- which(celltype$test == celltype.name)[1]
+                   points(data.list$test[pointsSel],
+                          rep(y.value, length(data.list$test[pointsSel])),
+                          col=col.group,
+                          pch="|",
+                          cex=1.8)
                }
-               points(data.list[[group]],
-                      rep(y.value, length(data.list[[group]])),
-                      col=col.group,
-                      pch="|",
-                      cex=1.8)
+
            })
 
     ## Labels range of z-scores for the standard
@@ -235,16 +274,4 @@ rugplotDonorTargetTest <- function(test.data, cellscore) {
                  col="royalblue")
         }
     }
-
-    ## Add legend
-    col.list <- .getMainColours("all", FALSE)
-    leg.vector <- sapply(names(col.list),
-                         function(x){
-                             paste0(celltype[[x]], " (",
-                                    length(data.list[[x]]),")")
-                         })
-    legend("topleft", fill=unlist(col.list[c("target", "test")]),
-           border=FALSE, bg="grey90", pt.cex=1.5, cex=1.1,
-           legend=leg.vector[c("target", "test")],
-           title=title)
 }

@@ -79,10 +79,10 @@
 #'    ## Plot: this will plot a 2-paneled plot
 #'	 par(mfrow=c(1,2))
 #'    scatterplotDonorTargetTest(test.data, cellscore, FALSE)
-#'  
+#'
 #'    ## Reset graphical parameters
 #'    par(old.par)
-#'    
+#'
 #' }
 #' }
 
@@ -98,9 +98,10 @@ scatterplotDonorTargetTest <- function(test.data, cellscore, index.plot=FALSE) {
     ############################################################################
     ## PART I. Data preparation
     ############################################################################
+
     celltype <- list(donor=test.data$start[1],
                      target=test.data$target[1],
-                     test=test.data$sub_cell_type1[1])
+                     test=unique(test.data$sub_cell_type1))
 
     ## Collect all data tables in one list
     ## Subset columns using column names: "donor.like","target.like","index"
@@ -170,24 +171,28 @@ scatterplotDonorTargetTest <- function(test.data, cellscore, index.plot=FALSE) {
          yaxt="n", xlab="", ylab="", bty="n", main="", cex.main=0.8)
 
     col.table = unique(col.table)
-    leg.vector <- sapply(names(celltype),
+    celltype.all <- unlist(celltype)
+    leg.vector <- sapply(names(celltype.all),
                          function(x){
-                             if (x != "test"){
-                                 type <- celltype[[x]]
-                             }else{
-                                 type <- col.table$group
+                             type <- celltype.all[[x]]
+                             if (x == "donor" || x == "target"){
+                                 paste0(type, " (", nrow(data.list[[x]]),")")
+                             } else{
+                                 sel <- test.data$sub_cell_type1 == type
+                                 paste0(type, " (",
+                                        length(test.data$sub_cell_type1[sel]),")")
                              }
-                             paste0(type, " (", nrow(data.list[[x]]),")")
                          })
     legend("topleft",
            fill=c(.getMainColours("donor", FALSE),
                   .getMainColours("target", FALSE),
-                  NA),
+                  rep(NA, length(celltype$test))),
            border=FALSE,
            legend=unlist(leg.vector),
-           pch=c(NA, NA, 4), col=c(NA, NA, col.table$col),
+           pch=c(NA, NA, rep(4, length(celltype$test))),
+           col=c(NA, NA, col.table$col),
            pt.cex=1.5, cex=1.1,
-           title=paste0(test.data$experiment_id[1], ": ", "Transition from ",
+           title=paste0("Transition from ",
                         celltype$donor," -> ", celltype$target))
 
     invisible()

@@ -110,7 +110,8 @@ heatmapOnOffMarkers <- function(test.data, markergenes, pdata, calls) {
     ## Get the standard data and marker list for the given transition
     celltype <- list(donor=test.data$start[1],
                      target=test.data$target[1],
-                     test=test.data$sub_cell_type1[1])
+                     test=unique(test.data$sub_cell_type1))
+    celltype.all <- unlist(celltype)
     transition <- paste0(celltype$donor, "->",celltype$target)
     marker.list <- list(target="target", donor="donor")
 
@@ -122,18 +123,21 @@ heatmapOnOffMarkers <- function(test.data, markergenes, pdata, calls) {
                           })
 
     samples.list <-
-        lapply(names(celltype),
+        lapply(names(celltype.all),
                function(group){
-                   if (group == "test"){
-                       sel <- pdata$sample_id %in% test.data$sample_id
-                   }else{
+                   if (group == "donor" || group == "target"){
                        sel <- !is.na(pdata$category) &
+                           pdata$category == 'standard' &
                            pdata$general_cell_type %in% celltype[[group]]
+                   }else{
+                       celltype.name <- celltype.all[group]
+                       sel <- pdata$sample_id %in% test.data$sample_id &
+                           pdata$sub_cell_type1 == celltype.name
                    }
                    intersect(rownames(pdata)[sel], colnames(calls))
                })
-    names(samples.list) <- names(celltype)
-    samples.vector <- unlist(samples.list[c("donor", "test", "target")])
+    names(samples.list) <- names(celltype.all)
+    samples.vector <- unlist(samples.list[names(celltype.all)])
 
     calls.list <- lapply(marker.list,
                          function(mat){
@@ -148,16 +152,22 @@ heatmapOnOffMarkers <- function(test.data, markergenes, pdata, calls) {
     plot.me <- as.matrix(do.call("rbind", calls.list))
 
     ## Set title
-    main.title <- paste0(test.data$experiment_id[1], ": ", celltype$test, "\n",
-                         "Transition from ", transition)
+    main.title <- paste0("Transition from ", transition)
 
     ## Set colours
     col.list <- .getMainColours("all", FALSE)
-
+    testCol.table <- .colourMapping(celltype$test)
     col.columns <- rep("black", ncol(plot.me))
-    for (group in names(col.list)){
+    for (group in names(celltype.all)){
         sel <- colnames(plot.me) %in% samples.list[[group]]
-        col.columns[sel] <- col.list[[group]]
+        if (group == 'target' || group == 'donor') {
+            col.columns[sel] <- col.list[[group]]
+        } else {
+            typeSel <- names(celltype.all) == group
+            type <- celltype.all[typeSel]
+            testCol.index <- testCol.table$group == type
+            col.columns[sel] <- testCol.table$col[testCol.index]
+        }
     }
 
     heatmap.2(plot.me, col=cm.colors(8),

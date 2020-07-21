@@ -77,7 +77,9 @@
 #' }
 
 CellScoreReport <- function(cellscore, cell.change, marker.genes, inputObj,
-                            group.by = c('transition', 'experiment_id', 'sub_cell_type1')) {
+                            group.by = c('transition',
+                                         'experiment_id',
+                                         'sub_cell_type1')) {
 
     ############################################################################
     ## PART 0. Check function arguments
@@ -133,8 +135,8 @@ CellScoreReport <- function(cellscore, cell.change, marker.genes, inputObj,
                ## Plots
                scatterplotDonorTargetTest(test.data, cellscore)
                rugplotDonorTargetTest(test.data, cellscore)
-
                heatmapOnOffMarkers(test.data, marker.genes, pdata, calls)
+               BarplotOnOff(sExpt, test.data, group.by = 'sample_id')
 
     })
 

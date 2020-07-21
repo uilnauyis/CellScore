@@ -8,8 +8,8 @@
 #' is undergoing a transition in cell identity from a starting cell type to a
 #' target cell type.
 #'
-#' @param inputObj an ExpressionSet or a SummarizedExperiment object containing 
-#'   data matrices of normalized expression data, present/absent calls, a gene 
+#' @param inputObj an ExpressionSet or a SummarizedExperiment object containing
+#'   data matrices of normalized expression data, present/absent calls, a gene
 #'   annotation data frame and a phenotype data frame.
 #' @param cell.change a data frame containing three columns, one for the
 #'   start (donor) test and target cell type. Each row of the data.
@@ -146,8 +146,8 @@ CellScore <- function(inputObj, cell.change, scores.onoff, scores.cosine) {
     ##  than one transition
     big.table <- merge(scores.onoff, temp.cosine, by.x="test",
                        by.y="test.samples", all.x=TRUE)
-    ## Rename "test" column to "composite.ID"
-    colnames(big.table)[which(colnames(big.table) == "test")]  <- "composite.ID"
+    ## Introduce "composite.ID", which contains the same values as "test" column
+    big.table[, 'composite.ID'] <- big.table[, 'test']
     ## final size of table has to be number of rows in scores.onoff
     stopifnot(nrow(big.table) == nrow(scores.onoff))
 
@@ -184,7 +184,7 @@ CellScore <- function(inputObj, cell.change, scores.onoff, scores.cosine) {
                    "cell_type","disease_status","category",
                    "general_cell_type","donor_tissue","sub_cell_type1",
                    "transition_induction_method","donor_cell_body_location",
-                   "start","target","markers.start","markers.target",
+                   "start","target", "test", "markers.start","markers.target",
                    "start.mkrs.in.test", "target.mkrs.in.test",
                    "loss.start.mkrs","gain.target.mkrs", "OnOffScore")
     data.frame(big.table[, intersect(selected, colnames(big.table))], mat,

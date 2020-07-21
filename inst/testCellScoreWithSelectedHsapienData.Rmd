@@ -4,17 +4,24 @@ author: "Siyuan"
 date: "6/29/2020"
 output: html_document
 ---
-
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-### Data preprocessing
+### Preparations
 
-#### creating a map between cell types and their abbreviations
-Function 'getCellTypeMap' in this example returns a map between cell types and their abbreviations.
-This map is not part of the CellScore library and should be defined by the user. Each abbreviation should 
-be unique and has a 1-to-1 mapping to a cell type.
+Before assessing data with 'CellScore', the users should first create the 
+abbreviations of the cell types to be tested by 'CellScore' and a 'cell.change'
+data frame.
+
+#### Creating a map between cell types and their abbreviations
+Users of CellScore should define abbreviations for the cell types they want to 
+test. Each abbreviation should be unique and has a 1-to-1 mapping to a cell type.
+
+Function 'getCellTypeMap' in this example returns a map between cell types and 
+their abbreviations that are used in this tutorial. Note that this function is 
+not part of the 'CellScore' library and it is only for demonstration purpose in 
+this tutorial. 
+
 ```{r}
 getCellTypeMap <- function() {
     ## Hardcode abbreviations for each cell type
@@ -123,23 +130,32 @@ getCellTypeMap <- function() {
 }
 ```
 #### Prepare 'cell.change' data frame
- The following code prepares 'cell.change' data frame. This data frame contains 3 columns, 
- which are 'start', 'test' and 'target'. Each row in the data frame represents the transition 
- in an experiment. The values in the 'start' column are the abbreviations of
- parental cell types (or starting cell types) in the transitions. The values in 'target' column are the abbreviations of
- the target cell types in the transitions. The values in 'test' column are in the format '{test_cell_type}-{start}', where
- '{test_cell_type}' are the abbreviations of the name assigned to the test cells and '{start}' are the abbreviations of
- parental cell types (or starting cell types). The following function 'prepareSampleTransitions' is used to generate and save the 'cell.change' in a
- tsv file and is not part of 'CellScore' library. The user should create this data frame based on the experiment data.
+ The 'prepareSampleTransitions' prepares 'cell.change' data frame. This function 
+ is not part of 'CellScore' library. function 'prepareSampleTransitions' is used 
+ to generate and save the 'cell.change' in a tsv file and is not part of 
+ 'CellScore' library and only used in this tutorial.
  
-
+ 'cell.change' data frame contains 3 columns, which are 'start', 'test' and 'target'. 
+ Each row in the data frame represents the transition in an experiment. The values 
+ in the 'start' column are the abbreviations of parental cell types (or starting 
+ cell types) in the transitions. The values in 'target' column are the 
+ abbreviations of the target cell types in the transitions. The values in 'test' 
+ column are in the format '{test_cell_type}-{start}', where '{test_cell_type}' 
+ are the abbreviations of the name assigned to the test cells and '{start}' are 
+ the abbreviations of parental cell types (or starting cell types). The users 
+ should create 'cell.change' data frame based on their own experiments
 ```{r}
-prepareSampleTransitions <- function() {
+sampleMetadataPath <- system.file("extdata", 
+                                  "sampleMetadata.csv", 
+                                  package = "CellScore")
 
-    dat <- read.csv(system.file("extdata",
-                                  "sampleMetadata.csv",
-                                  package = "CellScore"),
-                    header = TRUE)
+transitionPath <- system.file("extdata", 
+                              "exampleTransitionsHsapienData.tsv",
+                              package="CellScore")
+
+prepareSampleTransitions <- function(sampleMetadataPath, transitionPath) {
+
+    dat <- read.csv(sampleMetadataPath, header = TRUE)
 
     uniqueCellTypes <- unique(c(as.array(dat$general_cell_type),
                                 as.array(dat$target_cell_type),
@@ -179,8 +195,7 @@ prepareSampleTransitions <- function() {
     dir.create(tempDirPath)
 
     write.table(uniqueTransitionsAbbrv,
-                file = system.file("extdata", "exampleTransitionsHsapienData.tsv",
-                                   package="CellScore"),
+                file = transitionPath,
                 quote = FALSE,
                 sep = '\t')
 
@@ -190,62 +205,105 @@ prepareSampleTransitions <- function() {
 
 ### Calculate 'CellScore'
 #### Generate 'OnOff' score by run 'OnOff' function with 'cell.change' data frame and experiment data.
- 'CellScore' library analyze the 'CellScore' of test cells with given standard cells in the experiment data. The 'category' of test cells and standard cells
- are 'test' and 'standard' respectively. Transitions with insufficient standard cell types (at least 3 for both 'start' and 'target') would be ignored by 'CellScore' library.
+First, load the dependencies and inspect the data
 ```{r}
+# Load dependencies
 library(SummarizedExperiment)
 library(CellScore)
 library(DEE2HsapienData)
 
-prepareSampleTransitions()
-CellTypeMap <- getCellTypeMap()
-
-rdata.path <- system.file("extdata", "deseq2NormalizedDee2Data",
-  package="CellScore")
-tsvdata.path <- system.file("extdata", "exampleTransitionsHsapienData.tsv",
-  package="CellScore")
-
- 
-if (file.exists(rdata.path) && file.exists(tsvdata.path)) {
-  deseq2NormalizedDee2Data <- readRDS(rdata.path)
-  normalizedSExpr <- deseq2NormalizedDee2Data$normalizedSExpr
-  
-  # replace values in 'general_cell_type' with abbrvs 
-  colData(normalizedSExpr)[, 'general_cell_type'] <- unname(as.array(sapply(
-    normalizedSExpr$general_cell_type, 
-    function(element) CellTypeMap[[element]], USE.NAMES = FALSE)))
-  
-  # replace values in 'parental_cell_type' with abbrvs
-  colData(normalizedSExpr)[, 'parental_cell_type'] <- unname(as.array(sapply(
-    normalizedSExpr$parental_cell_type, 
-    function(element) {
-      if (is.na(element)) {
-        return(NA)
-      }
-      CellTypeMap[[element]]
-    }, USE.NAMES = FALSE)))
-  
-  # set values of 'sub_cell_type1' column
-  colData(normalizedSExpr)$sub_cell_type1 <- paste(
-    colData(normalizedSExpr)$general_cell_type, 
-    colData(normalizedSExpr)$parental_cell_type,
-    sep = '-')
-
-  pcaPlot(normalizedSExpr)
-  
-  
-  cell.change <- read.delim(
-    file=tsvdata.path, 
+# create 'cell.change' data frame and get the map 'CellTypeMap' between cell 
+# types and their abbreviations
+prepareSampleTransitions(sampleMetadataPath, transitionPath)
+cell.change <- read.delim(
+    file=transitionPath, 
     sep="\t",
     header=TRUE, 
     stringsAsFactors=FALSE)
-  
-  print("Content of cell.change")
-  print(cell.change)
-  
-  print("'normalizedSExpr' returns")
-  print(normalizedSExpr)
-}
+CellTypeMap <- getCellTypeMap()
+
+# Path to the data to be assessed 
+rdata.path <- system.file("extdata", "deseq2NormalizedDee2Data",
+  package="CellScore")
+ 
+# Load preprocessed hsapien data in SummarizedExperiment format from DEE2
+deseq2NormalizedDee2Data <- readRDS(rdata.path)
+normalizedSExpr <- deseq2NormalizedDee2Data$normalizedSExpr
+
+# Set 'SRR_accession' (Todo: fix data package and remove this step)
+colData(normalizedSExpr)$SRR_accession <- rownames(colData(normalizedSExpr))
+
+# replace values in 'general_cell_type' with abbrvs 
+colData(normalizedSExpr)[, 'general_cell_type'] <- unname(as.array(sapply(
+  normalizedSExpr$general_cell_type, 
+  function(element) CellTypeMap[[element]], USE.NAMES = FALSE)))
+
+# replace values in 'parental_cell_type' with abbrvs
+colData(normalizedSExpr)[, 'parental_cell_type'] <- unname(as.array(sapply(
+  normalizedSExpr$parental_cell_type, 
+  function(element) {
+    if (is.na(element)) {
+      return(NA)
+    }
+    CellTypeMap[[element]]
+  }, USE.NAMES = FALSE)))
+
+# set values of 'sub_cell_type1' column
+colData(normalizedSExpr)$sub_cell_type1 <- paste(
+  colData(normalizedSExpr)$general_cell_type, 
+  colData(normalizedSExpr)$parental_cell_type,
+  sep = '-')
+
+# Set feature_id for of 'rowData' of the input
+rowdata <- rowData(normalizedSExpr)
+rowdata$feature_id <- rownames(rowdata)
+rowData(normalizedSExpr) <- rowdata
+
+# Set assay 'exprs' same as 'counts'
+assays(normalizedSExpr)$exprs <- assay(normalizedSExpr, "counts")
+
+coldata <- colData(normalizedSExpr)  
+# Set 'donor_tissue' as 'parental_cell_type'
+colData(normalizedSExpr)$donor_tissue <- coldata$parental_cell_type
+# Set the values of 'experiment_id' as values in 'SRX_accession' column of
+# the coldata of the input object
+sampleMetaData <- read.csv(sampleMetadataPath, header = TRUE)
+# Set the values in 'platform_id' as values in 'Platform' column of the
+# coldata of the input object.
+colData(normalizedSExpr)$platform_id <- colData(normalizedSExpr)$Platform
+# Set the values in 'sample_id' as SRR accessions, which are the rownames
+# of the coldata of the input object.
+colData(normalizedSExpr)$sample_id <- rownames(colData(normalizedSExpr))
+# Set the values in 'experiment_id'. In this tutorial, we use transitions as 'experiment_id' 
+colData(normalizedSExpr)$experiment_id <- unname(unlist(apply(colData(normalizedSExpr), 1,
+    function(row) {
+      formatedType <- paste(row[['general_cell_type']], 
+                            row[['parental_cell_type']], 
+                            sep = '-')
+      transitionSel <- which(cell.change$test == formatedType)
+      if (length(transitionSel) == 0) {
+        return('standard')
+      }
+      paste(cell.change[transitionSel, ]['start'], 
+            cell.change[transitionSel, ]['target'], 
+            sep = ' −> ')
+    })))
+
+pcaPlot(normalizedSExpr)
+
+```
+```{r}
+
+## We could see there is an outlier in the standard IPS cells and need to exclude
+## it from our data
+normalizedSExpr <- normalizedSExpr[, normalizedSExpr$SRR_accession != 'SRR1198659']
+pcaPlot(normalizedSExpr)
+
+print("Content of cell.change")
+print(cell.change)
+
+print("'normalizedSExpr' returns")
+print(normalizedSExpr)
 
 ```
 
@@ -285,6 +343,7 @@ ScatterplotCellScoreComponents(cellscore, cell.change, FALSE)
 
 ```{r}
 pdf(file="CellScoreReport_PerTransition.pdf", width=7, height=11)
-CellScoreReport(cellscore, cell.change, group.OnOff$markers, normalizedSExpr)
-
+CellScoreReport(cellscore, cell.change, group.OnOff$markers, normalizedSExpr,
+                group.by = 'transition')
+dev.off()
 ```

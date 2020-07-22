@@ -197,7 +197,7 @@ rugplotDonorTargetTest <- function(test.data, cellscore) {
     xlim <- c(min(unlist(data.list[c("target","test")])),
               max(unlist(data.list[c("target","test")])))
     ylim <- c(0, 5)
-    par(mar=c(5, 5, 4, 5) + 0.1)
+    par(mar=c(5, 8, 4, 5) + 0.1)
 
     ## Set up plot area
     plot(zscore.list$test, zscore.list$test,
@@ -260,8 +260,16 @@ rugplotDonorTargetTest <- function(test.data, cellscore) {
 
     ## How many std to plot?
     zscore.std.plot <- abs(min(unlist(zscore.list[c("target","test")])))
-    for (j in seq_len(zscore.std.plot)){
+    ## Set maximum number of vertical lines (std) to be printed to 30
+    ## to avoid overlapping of labels  
+    ablines.maxNum <- 30
+    ablines.num <- length(seq_len(zscore.std.plot))
+    skip <- 1
+    if (ablines.num > ablines.maxNum) {
+        skip <- ceiling(ablines.num / ablines.maxNum)
+    }
 
+    for (j in seq(1, zscore.std.plot, by = skip)){
         list.sd = list(pos=target.mean + j*target.std,
                        neg=target.mean - j*target.std)
 

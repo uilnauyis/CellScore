@@ -48,7 +48,7 @@
 #'    ## NOTE: May take 1-2 minutes on the full eset object,
 #'    ## so we subset it for 4 cell types
 #'    pdata <- pData(eset)
-#'    sel.samples <- pdata$general_cell_type %in% c("ESC", "EC", "FIB", "KER", 
+#'    sel.samples <- pdata$general_cell_type %in% c("ESC", "EC", "FIB", "KER",
 #'                  "ASC", "NPC", "MSC")
 #'    eset.sub <- eset[, sel.samples]
 #'    cs <- CosineSimScore(eset.sub, cell.change, iqr.cutoff=0.1)
@@ -59,7 +59,8 @@
 #' }
 
 
-PlotCosineSimHeatmap <- function(data, desc="xx", width=20, height=20,
+PlotCosineSimHeatmap <- function(data, output.pdf = TRUE, desc="xx", width=20,
+                                 height=20,
                                  x=-30, y=3) {
 
     ###########################################################################
@@ -86,9 +87,11 @@ PlotCosineSimHeatmap <- function(data, desc="xx", width=20, height=20,
     ############################################################################
     ## PART II. Plot
     ############################################################################
-    pdf(file=paste0("CosineSimilarityHeatmap_", gsub(" ", "_" , desc),".pdf"),
-        width=width,
-        height=height)
+    if (output.pdf) {
+        pdf(file=paste0("CosineSimilarityHeatmap_", gsub(" ", "_" , desc),".pdf"),
+            width=width,
+            height=height)
+    }
 
     ## Display a color-coded triangular distance matrix
     map <- distogram(plot.me, n=9, key=FALSE,
@@ -99,5 +102,7 @@ PlotCosineSimHeatmap <- function(data, desc="xx", width=20, height=20,
     ## Add colour key                )
     hkey(map, title = "cosine similarity", x=x, y=y, side=1)
 
-    dev.off()
+    if (output.pdf) {
+        dev.off()
+    }
 }

@@ -109,8 +109,8 @@ heatmapOnOffMarkers <- function(test.data, markergenes, pdata, calls) {
     ############################################################################
     ## Get the standard data and marker list for the given transition
     celltype <- list(donor=test.data$start[1],
-                     target=test.data$target[1],
-                     test=unique(test.data$sub_cell_type1))
+                     test=unique(test.data$sub_cell_type1),
+                     target=test.data$target[1])
     celltype.all <- unlist(celltype)
     transition <- paste0(celltype$donor, "->",celltype$target)
     marker.list <- list(target="target", donor="donor")

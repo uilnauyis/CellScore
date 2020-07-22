@@ -134,7 +134,9 @@ scatterplotDonorTargetTest <- function(test.data, cellscore, index.plot=FALSE) {
     plot(xylim, xylim, type="n",
          xlab="Donor-like score", ylab="Target-like score",
          cex.lab=1.5, cex.axis=1.3, cex.main=1.5,
-         main="CellScore Components", xlim=xylim, ylim=xylim )
+         main="CellScore Components", xlim=xylim, ylim=xylim,
+         ## force square
+         pty='s')
 
     lapply(names(data.list),
            function(group){

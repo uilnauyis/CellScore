@@ -134,7 +134,7 @@ BarplotOnOff <- function(inputObj, onoff.df, group.by = c('transition',
                         plot=FALSE)
     ## Set up plot but don't draw anything
     cex.lab <- 0.85
-    par(mar=c(5, 7, 4, 7) + 0.1)
+    par(mar=c(5, 15, 4, 15) + 0.1)
     plot(c(-1, 1), c(0, max(y.values)+5), type = "n",
          main="Transition progression scored by on/off genes",
          xlab="fraction of markers",
@@ -158,7 +158,13 @@ BarplotOnOff <- function(inputObj, onoff.df, group.by = c('transition',
               abline(v=instance$abline, col="red", lty=2)
           })
     ## Location of right-hand side axis labels
-    mtext(side=4, onoff.df$test, at=y.values, las=2, cex=cex.lab)
+    if (group.by == 'sample_id') {
+        labels <- paste(onoff.df$sample_id, '(',
+                        onoff.df$sub_cell_type1, ')', sep = '')
+    } else {
+        labels <- onoff.df$test
+    }
+    mtext(side=4, labels, at=y.values, las=2, cex=cex.lab)
     legend("top", legend=map.table$legend, fill=map.table$col, cex=1)
 
     ## Reset graphical parameters

@@ -77,6 +77,7 @@
 #' }
 
 CellScoreReport <- function(cellscore, cell.change, marker.genes, inputObj,
+                            cs,
                             group.by = c('transition',
                                          'experiment_id',
                                          'sub_cell_type1')) {
@@ -131,16 +132,91 @@ CellScoreReport <- function(cellscore, cell.change, marker.genes, inputObj,
                test.data <-
                    plot.data.ordered[plot.data.ordered$plot_group %in% group, ]
                ## Page 1 layout for plots
-               layout(matrix(c(1,2,3,3,4,4), nrow=3, ncol=2, byrow=TRUE))
-               ## Plots
+               page_1 <- layout(matrix(c(1,2,3,3,4,4),
+                                       nrow=3,
+                                       ncol=2,
+                                       byrow=TRUE))
                scatterplotDonorTargetTest(test.data, cellscore)
                rugplotDonorTargetTest(test.data, cellscore)
+
+               ## Page 2 layout for plots
+               page_2 <- layout(matrix(c(1, 1, 0, 0), ncol = 1, nrow = 4, byrow = TRUE),
+                                widths = 25, heights = 40)
                heatmapOnOffMarkers(test.data, marker.genes, pdata, calls)
+
+               ## Page 3 layout
+               page_3 <- layout(matrix(c(1, 1, 0, 0), ncol = 1, nrow = 4, byrow = TRUE),
+                                widths = 25, heights = 40)
                BarplotOnOff(sExpt, test.data, group.by = 'sample_id')
 
+               ## Page 4 layout
+               page_4 <- layout(matrix(c(1, 1, 0, 0), ncol = 1, nrow = 4, byrow = TRUE),
+                                widths = 25, heights = 40)
+               PlotCosineSimHeatmap(.subsetCosineSimScoreByTestdata(cs,
+                                                                    test.data,
+                                                                    pdata),
+                                    desc = group,
+                                    output.pdf = FALSE)
     })
 
     ## RinputObj graphical parameters
     par(old.par)
     invisible()
+}
+
+.subsetCosineSimScoreByTestdata <- function(cs, test.data, pdata) {
+    target.cellType <- unique(test.data$target)
+    start.cellType <- unique(test.data$start)
+
+    ## test.data should have only one target and one start cell type
+    stopifnot(is.vector(target.cellType) && length(target.cellType) == 1)
+    stopifnot(is.vector(start.cellType) && length(start.cellType) == 1)
+
+    target.std <- pdata[(pdata$general_cell_type %in% target.cellType) &
+                            (pdata$category == 'standard'), ]$sample_id
+    start.std <- pdata[(pdata$general_cell_type %in% start.cellType) &
+                           (pdata$category == 'standard'), ]$sample_id
+
+    cellTypes <- c(unlist(test.data$sample_id),
+                   unlist(target.std),
+                   unlist(start.std),
+                   unlist(start.cellType),
+                   unlist(target.cellType))
+    test.cs <- cs$cosine.samples[colnames(cs$cosine.samples) %in% cellTypes,
+                                 rownames(cs$cosine.samples) %in% cellTypes]
+
+    ## Add 'category' of the samples to label
+    for(i in c(1:length(colnames(test.cs)))) {
+        colname <- colnames(test.cs)[i]
+        if (colname %in% test.data$sample_id) {
+            transition <-
+                unique(test.data[colname == test.data$sample_id, ]$cxkey.subcelltype)
+            colnames(test.cs)[i] <- paste(colname, '(', transition, ')',
+                                          sep = '')
+        } else if (colname %in% target.std) {
+            colnames(test.cs)[i] <- paste(colname, '(target)',
+                                          sep = '')
+        } else if (colname %in% start.std) {
+            colnames(test.cs)[i] <- paste(colname, '(donor)',
+                                          sep = '')
+        }
+    }
+
+    for(i in c(1:length(rownames(test.cs)))) {
+        rowname <- rownames(test.cs)[i]
+        if (rowname %in% test.data$sample_id) {
+            transition <-
+                unique(test.data[rowname == test.data$sample_id, ]$cxkey.subcelltype)
+            rownames(test.cs)[i] <- paste(rowname, '(', transition, ')',
+                                          sep = '')
+        } else if (rowname %in% target.std) {
+                rownames(test.cs)[i] <- paste(rowname, '(target)',
+                                              sep = '')
+        } else if (rowname %in% start.std) {
+                rownames(test.cs)[i] <- paste(rowname, '(donor)',
+                                              sep = '')
+        }
+    }
+
+    test.cs
 }

@@ -1,5 +1,5 @@
 ---
-title: "test CellScore With SelectedHsapienData normalized with Deseq2 normalization"
+title: "test CellScore With Selected Hsapien Data normalized with Deseq2 normalization"
 author: "Siyuan"
 date: "6/29/2020"
 output: html_document
@@ -159,33 +159,49 @@ prepareSampleTransitions <- function(sampleMetadataPath, transitionPath) {
 
     dat <- read.csv(sampleMetadataPath, header = TRUE)
 
-    uniqueCellTypes <- unique(c(as.array(dat$general_cell_type),
-                                as.array(dat$target_cell_type),
-                                as.array(dat$parental_cell_type)))
-    
-    # Show all the unique cell types in the data
-    print(uniqueCellTypes)
-
     cellTypeMap <- getCellTypeMap()
+    
+    standardCellTypes <- unique(dat[dat$category == 'standard', 
+                                    'general_cell_type'], 
+                                drop = FALSE)
 
     uniqueTransitions <- unique(dat[dat$category == 'test',
                                     c('parental_cell_type',
-                                      'general_cell_type',
-                                      'target_cell_type')])
+                                      'general_cell_type')])
 
-    colnames(uniqueTransitions) <- c("start",	"test", "target")
+    colnames(uniqueTransitions) <- c("start",	"test")
 
     ## Exclude samples without parental cell types or without target cell type
     uniqueTransitions <- uniqueTransitions[!is.na(uniqueTransitions$start) &
-                                             !is.na(uniqueTransitions$target) &
-                                             uniqueTransitions$start != '' &
-                                             uniqueTransitions$target != '', ]
+                                             uniqueTransitions$start != '', ]
 
     ## Replace full cell type names with abbreviations
     uniqueTransitionsAbbrv <- as.data.frame(lapply(uniqueTransitions,
                                                    function(element) {
                                                       (cellTypeMap[element])
                                                    }))
+    
+    standardCellTypesAbbrv <- lapply(standardCellTypes, 
+                                              function(element) {
+                                                (cellTypeMap[element])})
+    
+    newUniqueTransitionsAbbrv <- data.frame(start = c(),
+                                            test = c(), 
+                                            target = c())
+    
+    for(i in 1:nrow(uniqueTransitionsAbbrv)) {
+      row <- uniqueTransitionsAbbrv[i, ]
+      start <- row[['start']] 
+      targetTypes <- standardCellTypesAbbrv[standardCellTypesAbbrv != start]
+      transitions <- sapply(targetTypes, function(target){
+        c(row, target)    
+        })
+      transitions <- t(transitions)
+      colnames(transitions) <- c('start', 'test', 'target')
+      newUniqueTransitionsAbbrv <- rbind(
+        newUniqueTransitionsAbbrv, transitions)
+    }
+    uniqueTransitionsAbbrv <- newUniqueTransitionsAbbrv
 
     
     ## Format 'test' column
@@ -194,12 +210,6 @@ prepareSampleTransitions <- function(sampleMetadataPath, transitionPath) {
                                          sep = '-')
 
     tempDirPath <- paste(getwd(), 'temp', sep = '/')
-    dir.create(tempDirPath)
-
-    write.table(uniqueTransitionsAbbrv,
-                file = transitionPath,
-                quote = FALSE,
-                sep = '\t')
 
     uniqueTransitionsAbbrv
 }
@@ -213,19 +223,16 @@ First, load the dependencies and inspect the data
 library(SummarizedExperiment)
 library(CellScore)
 library(DEE2HsapienData)
+library(dplyr)
 
 # create 'cell.change' data frame and get the map 'CellTypeMap' between cell 
 # types and their abbreviations
 prepareSampleTransitions(sampleMetadataPath, transitionPath)
-cell.change <- read.delim(
-    file=transitionPath, 
-    sep="\t",
-    header=TRUE, 
-    stringsAsFactors=FALSE)
+cell.change <- prepareSampleTransitions(sampleMetadataPath, transitionPath)
 CellTypeMap <- getCellTypeMap()
 
 # Path to the data to be assessed 
-rdata.path <- system.file("extdata", "deseq2NormalizedData",
+rdata.path <- system.file("extdata", "dESeq2NormalizedData",
   package="CellScore")
  
 # Load preprocessed hsapien data in SummarizedExperiment format from DEE2
@@ -277,7 +284,7 @@ colData(normalizedSExpr)$platform_id <- colData(normalizedSExpr)$Platform
 # of the coldata of the input object.
 colData(normalizedSExpr)$sample_id <- rownames(colData(normalizedSExpr))
 # Set the values in 'experiment_id'. In this tutorial, we use transitions as 'experiment_id' 
-colData(normalizedSExpr)$experiment_id <- colData(normalizedSExpr)$
+colData(normalizedSExpr)$experiment_id <- colData(normalizedSExpr)$SRX_accession
 
 pcaPlot(normalizedSExpr)
 
@@ -332,7 +339,8 @@ ScatterplotCellScoreComponents(cellscore, cell.change, FALSE)
 ```
 
 ```{r}
-pdf(file="CellScoreReport_PerTransition.pdf", width = 8, height = 9)
+pdf(file="DESeq2 Normalized Data CellScore Report (all transitions).pdf",
+    width = 8, height = 9)
 CellScoreReport(cellscore, cell.change, group.OnOff$markers, normalizedSExpr,
                 cs,
                 group.by = 'transition')

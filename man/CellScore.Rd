@@ -7,8 +7,8 @@
 CellScore(inputObj, cell.change, scores.onoff, scores.cosine)
 }
 \arguments{
-\item{inputObj}{an ExpressionSet or a SummarizedExperiment object containing 
-data matrices of normalized expression data, present/absent calls, a gene 
+\item{inputObj}{an ExpressionSet or a SummarizedExperiment object containing
+data matrices of normalized expression data, present/absent calls, a gene
 annotation data frame and a phenotype data frame.}
 
 \item{cell.change}{a data frame containing three columns, one for the

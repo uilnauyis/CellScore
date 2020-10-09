@@ -170,6 +170,7 @@ OnOff <- function(inputObj, cell.change,
                                             .getOnOffMarkersByGroup(fractions,
                                                                     diff.cutoff,
                                                                     test.cutoff)
+
                                         ## d. Calculate and format the on/off
                                         ##    scores
                                         scores <- .formatOnOffScores(probesets)
@@ -218,6 +219,10 @@ OnOff <- function(inputObj, cell.change,
                      ## c. Mark the cell type-specific probestes
                      probesets <- .getOnOffMarkersByGroup(fractions, diff.cutoff,
                                                           test.cutoff)
+                     if (sum(probesets$start) == 0 ||
+                         sum(probesets$target) == 0) {
+                       return(NULL)
+                     }
                      ## d. Format the marker probesets into a data.frame
                      ##    and extend it with gene annotaions
                      markers <- .formatOnOffMarkers(instance, probesets, annot)
@@ -229,7 +234,9 @@ OnOff <- function(inputObj, cell.change,
                      list(markers=markers, scores=scores)
                  })
 
-      ## Combine marker and score lists
+    ## Exclude improper transitions
+    out <- Filter(Negate(is.null), out)
+    ## Combine marker and score lists
     onoff.markers <- do.call('rbind', lapply(out, '[[', 'markers'))
     sub.onoff.markers <- onoff.markers[, c("comparison", "group","feature_id")]
     onoff.markers <- onoff.markers[!duplicated(sub.onoff.markers),]
@@ -300,8 +307,8 @@ OnOff <- function(inputObj, cell.change,
                                         collapse = "->")
                           count.group <- sum(probesets[[group]])
                           data.frame(comparison=rep(info, count.group),
-                                     group=rep(instance[group], count.group),
-                                     annotations[probesets[[group]],],
+                                     group=rep(instance[[group]], count.group),
+                                     annotations[probesets[[group]], , drop=FALSE],
                                      stringsAsFactors=FALSE)
                       })
     do.call("rbind", markers)

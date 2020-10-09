@@ -225,16 +225,15 @@ cell.change <- read.delim(
 CellTypeMap <- getCellTypeMap()
 
 # Path to the data to be assessed 
-rdata.path <- system.file("extdata", "deseq2NormalizedData",
-  package="CellScore")
+rdata.path <- system.file("extdata", "tMMNormalizedData.rds",
+  package="DEE2HsapienData")
  
 # Load preprocessed hsapien data in SummarizedExperiment format from DEE2
 deseq2NormalizedDee2Data <- readRDS(rdata.path)
-normalizedSExpr <- deseq2NormalizedDee2Data$normalizedSExpr
+normalizedSExpr <- deseq2NormalizedDee2Data
 
-# Set 'SRR_accession' (Todo: fix data package and remove this step)
-colData(normalizedSExpr)$SRR_accession <- rownames(colData(normalizedSExpr))
-
+```
+```{r}
 # replace values in 'general_cell_type' with abbrvs 
 colData(normalizedSExpr)[, 'general_cell_type'] <- unname(as.array(sapply(
   normalizedSExpr$general_cell_type, 
@@ -277,7 +276,7 @@ colData(normalizedSExpr)$platform_id <- colData(normalizedSExpr)$Platform
 # of the coldata of the input object.
 colData(normalizedSExpr)$sample_id <- rownames(colData(normalizedSExpr))
 # Set the values in 'experiment_id'. In this tutorial, we use transitions as 'experiment_id' 
-colData(normalizedSExpr)$experiment_id <- colData(normalizedSExpr)$
+#colData(normalizedSExpr)$experiment_id <- colData(normalizedSExpr)$
 
 pcaPlot(normalizedSExpr)
 

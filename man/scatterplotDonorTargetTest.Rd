@@ -84,10 +84,10 @@ if (file.exists(rdata.path) && file.exists(tsvdata.path)) {
    ## Plot: this will plot a 2-paneled plot
  par(mfrow=c(1,2))
    scatterplotDonorTargetTest(test.data, cellscore, FALSE)
- 
+
    ## Reset graphical parameters
    par(old.par)
-   
+
 }
 }
 }

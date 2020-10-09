@@ -4,7 +4,14 @@
 \alias{CellScoreReport}
 \title{Generate a CellScore report}
 \usage{
-CellScoreReport(cellscore, cell.change, marker.genes, inputObj)
+CellScoreReport(
+  cellscore,
+  cell.change,
+  marker.genes,
+  inputObj,
+  cs,
+  group.by = c("transition", "experiment_id", "sub_cell_type1")
+)
 }
 \arguments{
 \item{cellscore}{a data.frame of CellScore values, as calculated by
@@ -59,7 +66,7 @@ if (file.exists(rdata.path) && file.exists(tsvdata.path)) {
    ## NOTE: May take 1-2 minutes on the full inputObj object
    ## so we subset it for 4 cell types
    pdata <- pData(inputObj)
-   sel.samples <- pdata$general_cell_type \%in\% c("ESC", "EC", "FIB", "KER", 
+   sel.samples <- pdata$general_cell_type \%in\% c("ESC", "EC", "FIB", "KER",
                  "ASC", "NPC", "MSC", "iPS", "piPS")
    inputObj.sub <- inputObj[, sel.samples]
    cs <- CosineSimScore(inputObj.sub, cell.change, iqr.cutoff=0.1)

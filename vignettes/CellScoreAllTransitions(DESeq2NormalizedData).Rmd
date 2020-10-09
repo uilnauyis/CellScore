@@ -227,20 +227,15 @@ library(dplyr)
 
 # create 'cell.change' data frame and get the map 'CellTypeMap' between cell 
 # types and their abbreviations
-prepareSampleTransitions(sampleMetadataPath, transitionPath)
 cell.change <- prepareSampleTransitions(sampleMetadataPath, transitionPath)
 CellTypeMap <- getCellTypeMap()
 
 # Path to the data to be assessed 
-rdata.path <- system.file("extdata", "dESeq2NormalizedData",
-  package="CellScore")
+rdata.path <- system.file("extdata", "tMMNormalizedData.rds",
+  package="DEE2HsapienData")
  
 # Load preprocessed hsapien data in SummarizedExperiment format from DEE2
-deseq2NormalizedDee2Data <- readRDS(rdata.path)
-normalizedSExpr <- deseq2NormalizedDee2Data$normalizedSExpr
-
-# Set 'SRR_accession' (Todo: fix data package and remove this step)
-colData(normalizedSExpr)$SRR_accession <- rownames(colData(normalizedSExpr))
+normalizedSExpr <- readRDS(rdata.path)
 
 # replace values in 'general_cell_type' with abbrvs 
 colData(normalizedSExpr)[, 'general_cell_type'] <- unname(as.array(sapply(
@@ -264,9 +259,11 @@ colData(normalizedSExpr)$sub_cell_type1 <- paste(
   sep = '-')
 
 # Set feature_id for of 'rowData' of the input
-rowdata <- rowData(normalizedSExpr)
-rowdata$feature_id <- rownames(rowdata)
-rowData(normalizedSExpr) <- rowdata
+sRRAccessions <- rownames(assay(normalizedSExpr, 'counts'))
+rowData(normalizedSExpr) <- matrix(sRRAccessions, 
+                                   , 
+                                   ncol = 1, 
+                                   dimnames = list(sRRAccessions, c('feature_id')))
 
 # Set assay 'exprs' same as 'counts'
 assays(normalizedSExpr)$exprs <- assay(normalizedSExpr, "counts")
@@ -283,28 +280,12 @@ colData(normalizedSExpr)$platform_id <- colData(normalizedSExpr)$Platform
 # Set the values in 'sample_id' as SRR accessions, which are the rownames
 # of the coldata of the input object.
 colData(normalizedSExpr)$sample_id <- rownames(colData(normalizedSExpr))
-# Set the values in 'experiment_id'. In this tutorial, we use transitions as 'experiment_id' 
+# Set the values in 'experiment_id'.
 colData(normalizedSExpr)$experiment_id <- colData(normalizedSExpr)$SRX_accession
 
-pcaPlot(normalizedSExpr)
+PcaPlot(normalizedSExpr)
 
 ```
-```{r}
-
-## We could see there is an outlier in the standard IPS cells and need to exclude
-## it from our data
-normalizedSExpr <- normalizedSExpr[, normalizedSExpr$SRR_accession != 'SRR1198659']
-pcaPlot(normalizedSExpr)
-
-print("Content of cell.change")
-print(cell.change)
-
-print("'normalizedSExpr' returns")
-print(normalizedSExpr)
-
-```
-
-Calculate 'OnOff' scores
 ```{r}
 group.OnOff <- OnOff(normalizedSExpr, cell.change, out.put="marker.list")
 print(summary(group.OnOff))

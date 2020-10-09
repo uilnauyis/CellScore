@@ -4,11 +4,11 @@
 \alias{BarplotOnOff}
 \title{Pyramid barplot of on/off scores}
 \usage{
-BarplotOnOff(inputObj, group.score)
+BarplotOnOff(inputObj, onoff.df, group.by = c("transition", "sample_id"))
 }
 \arguments{
-\item{inputObj}{an ExpressionSet or SummarizedExperiment object containing 
-data matrices of normalized expression data, present/absent calls, a gene 
+\item{inputObj}{an ExpressionSet or SummarizedExperiment object containing
+data matrices of normalized expression data, present/absent calls, a gene
 annotation data.frame and a phenotype data.frame.}
 
 \item{group.score}{a data frame with cell type specific on/off scores as
@@ -56,7 +56,7 @@ if (file.exists(rdata.path) && file.exists(tsvdata.path)) {
 
    ## Calculate on/off score for individual samples
    individ.OnOff <- OnOff(eset, cell.change, out.put="individual")
-   
+
    ## Plot pyramid bar plot of on/off scores
    BarplotOnOff(eset, group.OnOff$scores)
 }
